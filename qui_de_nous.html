@@ -33,18 +33,61 @@
             text-transform: uppercase;
         }
 
+        .section {
+            display: none;
+        }
+
+        .active {
+            display: block;
+        }
+
+        #home-screen, #lobby-screen {
+            padding: 20px 0;
+        }
+
+        .btn {
+            background-color: #ff6a88;
+            color: white;
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #e65275;
+        }
+
+        #player-pseudo {
+            padding: 10px;
+            font-size: 1.1em;
+            border-radius: 5px;
+            border: none;
+            text-align: center;
+        }
+        
+        #lobby-code {
+            font-size: 2em;
+            letter-spacing: 5px;
+            color: #2ecc71;
+            margin: 20px 0;
+        }
+
+        #lobby-players-list {
+            list-style: none;
+            padding: 0;
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+
         #question-display {
             font-size: 2em;
             color: #3498db;
             margin: 20px 0;
             min-height: 80px;
-        }
-
-        #players-buttons {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 20px;
         }
         
         .player-vote-btn {
@@ -87,7 +130,7 @@
             border-radius: 8px;
             cursor: pointer;
             margin-top: 20px;
-            display: none; /* Initialement caché */
+            display: none;
         }
     </style>
 </head>
@@ -96,15 +139,24 @@
     <div class="game-container">
         <h1>Qui de nous... ?</h1>
         
-        <div id="setup-container">
-            <p>Entrez le nom des joueurs, un par ligne, pour commencer :</p>
-            <textarea id="player-names-input" rows="5" placeholder="Joueur 1&#10;Joueur 2&#10;..."></textarea>
-            <br>
-            <button id="start-game-btn" class="player-vote-btn">Lancer la partie !</button>
+        <div id="home-screen" class="section active">
+            <p>Choisis ton pseudo :</p>
+            <input type="text" id="player-pseudo" placeholder="Ton pseudo">
+            <p>Que veux-tu faire ?</p>
+            <button id="create-room-btn" class="btn">Créer un salon</button>
+            <button id="join-room-btn" class="btn">Rejoindre un salon</button>
         </div>
 
-        <div id="game-round-container" style="display: none;">
-            <p><strong>C'est l'heure de voter !</strong></p>
+        <div id="lobby-screen" class="section">
+            <h2>Salon de jeu</h2>
+            <p>Code du salon : <span id="lobby-code"></span></p>
+            <p>Joueurs dans le salon :</p>
+            <ul id="lobby-players-list"></ul>
+            <button id="start-game-btn" class="btn">Lancer la partie</button>
+        </div>
+
+        <div id="game-round-container" class="section">
+            <p><strong>Tour <span id="round-number">1</span> / 15</strong></p>
             <p id="question-display"></p>
             <div id="players-buttons"></div>
             <div id="results-display">
@@ -128,32 +180,80 @@
             "Qui de nous se fait le plus souvent ghoster ?",
             "Qui de nous a le plus de chances de devenir célèbre sur TikTok ?",
             "Qui de nous est le plus susceptible de s'endormir ici ?",
-            "Qui de nous a le plus de chances de se faire tatouer quelque chose de ridicule ?"
+            "Qui de nous a le plus de chances de se faire tatouer quelque chose de ridicule ?",
+            "Qui de nous est le plus susceptible de rater son vol ?",
+            "Qui de nous est le plus susceptible de perdre ses clés ?",
+            "Qui de nous est le plus susceptible de s'endormir ici ?"
         ];
 
         let players = [];
         let currentQuestionIndex = 0;
         const votes = {};
+        const totalRounds = 15;
 
-        const setupContainer = document.getElementById('setup-container');
+        const homeScreen = document.getElementById('home-screen');
+        const lobbyScreen = document.getElementById('lobby-screen');
         const gameRoundContainer = document.getElementById('game-round-container');
-        const startBtn = document.getElementById('start-game-btn');
+
+        const pseudoInput = document.getElementById('player-pseudo');
+        const createRoomBtn = document.getElementById('create-room-btn');
+        const joinRoomBtn = document.getElementById('join-room-btn');
+        const lobbyCodeSpan = document.getElementById('lobby-code');
+        const lobbyPlayersList = document.getElementById('lobby-players-list');
+        const startGameBtn = document.getElementById('start-game-btn');
         const nextBtn = document.getElementById('next-question-btn');
         const questionDisplay = document.getElementById('question-display');
         const playersButtonsDiv = document.getElementById('players-buttons');
         const resultsList = document.getElementById('results-list');
+        const roundNumberSpan = document.getElementById('round-number');
 
-        startBtn.addEventListener('click', () => {
-            const playerNames = document.getElementById('player-names-input').value.split('\n').filter(name => name.trim() !== '');
-            if (playerNames.length < 2) {
-                alert("Veuillez entrer au moins deux joueurs.");
+        createRoomBtn.addEventListener('click', () => {
+            const pseudo = pseudoInput.value.trim();
+            if (!pseudo) {
+                alert("Veuillez choisir un pseudo !");
                 return;
             }
-            players = playerNames;
-            setupContainer.style.display = 'none';
-            gameRoundContainer.style.display = 'block';
+            // Simulation : on crée une liste de joueurs pour le test
+            players = [pseudo, "Joueur 2", "Joueur 3", "Joueur 4"];
+            
+            homeScreen.classList.remove('active');
+            lobbyScreen.classList.add('active');
+            lobbyCodeSpan.textContent = Math.floor(1000 + Math.random() * 9000); // Code aléatoire non fonctionnel
+            updateLobbyList();
+        });
+
+        joinRoomBtn.addEventListener('click', () => {
+            const pseudo = pseudoInput.value.trim();
+            if (!pseudo) {
+                alert("Veuillez choisir un pseudo !");
+                return;
+            }
+            // Simulation : on rejoint une room existante
+            const roomCode = prompt("Entrez le code du salon :");
+            if (roomCode) {
+                 players = ["Joueur 1", "Joueur 2", pseudo, "Joueur 4"];
+                 homeScreen.classList.remove('active');
+                 lobbyScreen.classList.add('active');
+                 lobbyCodeSpan.textContent = roomCode;
+                 updateLobbyList();
+                 startGameBtn.style.display = 'none'; // Seul le créateur peut lancer la partie
+            }
+        });
+
+        startGameBtn.addEventListener('click', () => {
+            lobbyScreen.classList.remove('active');
+            gameRoundContainer.classList.add('active');
             startGame();
         });
+
+        function updateLobbyList() {
+            lobbyPlayersList.innerHTML = '';
+            players.forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = player;
+                lobbyPlayersList.appendChild(li);
+            });
+        }
 
         function startGame() {
             currentQuestionIndex = 0;
@@ -161,7 +261,7 @@
         }
 
         function displayQuestion() {
-            if (currentQuestionIndex >= questions.length) {
+            if (currentQuestionIndex >= totalRounds) {
                 questionDisplay.textContent = "Fin du jeu ! Merci d'avoir joué.";
                 playersButtonsDiv.style.display = 'none';
                 nextBtn.style.display = 'none';
@@ -169,12 +269,12 @@
                 return;
             }
 
+            roundNumberSpan.textContent = currentQuestionIndex + 1;
             questionDisplay.textContent = questions[currentQuestionIndex];
             playersButtonsDiv.innerHTML = '';
             resultsList.innerHTML = '';
             nextBtn.style.display = 'none';
             
-            votes.length = 0; // Réinitialise les votes
             players.forEach(player => votes[player] = 0);
 
             players.forEach(player => {
@@ -184,7 +284,6 @@
                 btn.addEventListener('click', () => {
                     votes[player]++;
                     displayResults();
-                    // Désactive les boutons après le vote
                     playersButtonsDiv.querySelectorAll('button').forEach(button => button.disabled = true);
                     nextBtn.style.display = 'block';
                 });
